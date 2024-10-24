@@ -1,18 +1,56 @@
-const botResponse = await fetch('https://api-inference.huggingface.co/models/gpt2', {
-    headers: {
-        Authorization: `Bearer ${HUGGING_FACE_API_KEY}`,
-        'Content-Type': 'application/json'
-    },
-    method: 'POST',
-    body: JSON.stringify({ inputs: userMessage }),
-});
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ApexNexus Chat</title>
+</head>
+<body>
+    <div id="chatWindow" style="border: 1px solid black; padding: 10px; height: 300px; overflow-y: scroll;"></div>
+    <input id="messageInput" type="text" placeholder="Type a message..." style="width: 80%;">
+    <button id="sendButton">Send</button>
 
-const responseText = await botResponse.text(); // log the full raw response
-console.log('Raw response:', responseText); // This will help you debug the issue
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const sendButton = document.getElementById('sendButton');
+            const messageInput = document.getElementById('messageInput');
+            const chatWindow = document.getElementById('chatWindow');
 
-try {
-    const data = JSON.parse(responseText); // Try parsing only if it’s valid JSON
-    chatWindow.innerHTML += `<p><strong>Bot:</strong> ${data.generated_text}</p>`;
-} catch (error) {
-    chatWindow.innerHTML += `<p><strong>Error:</strong> Failed to parse response</p>`;
-}
+            if (sendButton && messageInput && chatWindow) {
+                sendButton.addEventListener('click', async () => {
+                    const userMessage = messageInput.value;
+                    if (userMessage) {
+                        chatWindow.innerHTML += `<p><strong>You:</strong> ${userMessage}</p>`;
+                        try {
+                            const botResponse = await fetch('https://api-inference.huggingface.co/models/gpt2', {
+                                headers: {
+                                    Authorization: `Bearer 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 `,
+                                    'Content-Type': 'application/json'
+                                },
+                                method: 'POST',
+                                body: JSON.stringify({ inputs: userMessage }),
+                            });
+
+                            const responseText = await botResponse.text(); // Log full response
+                            console.log('Raw response:', responseText);
+
+                            try {
+                                const data = JSON.parse(responseText); // Attempt to parse JSON
+                                chatWindow.innerHTML += `<p><strong>Bot:</strong> ${data.generated_text}</p>`;
+                            } catch (error) {
+                                chatWindow.innerHTML += `<p><strong>Error:</strong> Failed to parse response</p>`;
+                            }
+                        } catch (error) {
+                            chatWindow.innerHTML += `<p><strong>Error:</strong> There was an error getting a response</p>`;
+                            console.error('Error:', error);
+                        }
+                        messageInput.value = '';  // Clear input field
+                    }
+                });
+            } else {
+                console.error("Could not find one or more required elements.");
+            }
+        });
+    </script>
+</body>
+</html>
