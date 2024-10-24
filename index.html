@@ -7,7 +7,7 @@
 </head>
 <body>
   <!-- Chat Window for displaying messages -->
-  <div id="chatWindow"></div>
+  <div id="chatWindow" style="border: 1px solid black; padding: 10px; height: 200px; overflow-y: scroll;"></div>
 
   <!-- Input field for user to type message -->
   <input id="messageInput" type="text" placeholder="Type a message...">
@@ -16,32 +16,36 @@
   <button id="sendButton">Send</button>
 
   <script>
-    // Wait until the DOM is fully loaded
     document.addEventListener("DOMContentLoaded", function() {
-      // Get the button and input field
       const sendButton = document.getElementById("sendButton");
       const messageInput = document.getElementById("messageInput");
       const chatWindow = document.getElementById("chatWindow");
 
-      // Ensure the elements exist
       if (sendButton && messageInput && chatWindow) {
         sendButton.addEventListener("click", async () => {
           const userMessage = messageInput.value;
 
+          // Add user's message to chat window
+          chatWindow.innerHTML += `<p><strong>You:</strong> ${userMessage}</p>`;
+
           // Fetch GPT response
-          const botResponse = await fetch("https://api-inference.huggingface.co/models/Mini-Omni2", {
-            headers: { Authorization: "Bearer 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" },
-            method: "POST",
-            body: JSON.stringify({ inputs: userMessage }),
-          })
-          .then(response => response.json())
-          .then(data => data[0].generated_text);
+          try {
+            const botResponse = await fetch("https://api-inference.huggingface.co/models/Mini-Omni2", {
+              headers: { Authorization: "Bearer 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" },
+              method: "POST",
+              body: JSON.stringify({ inputs: userMessage }),
+            })
+            .then(response => response.json())
+            .then(data => data[0].generated_text);
 
-          // Show the message and response in the chat window
-          chatWindow.innerHTML += `<p><strong>User:</strong> ${userMessage}</p>`;
-          chatWindow.innerHTML += `<p><strong>Bot:</strong> ${botResponse}</p>`;
+            // Add bot's response to chat window
+            chatWindow.innerHTML += `<p><strong>Bot:</strong> ${botResponse}</p>`;
+          } catch (error) {
+            console.error("Error fetching response from Hugging Face:", error);
+            chatWindow.innerHTML += `<p><strong>Bot:</strong> Error getting response</p>`;
+          }
 
-          // Clear the input field
+          // Clear input field
           messageInput.value = '';
         });
       } else {
@@ -51,3 +55,4 @@
   </script>
 </body>
 </html>
+
