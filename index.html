@@ -30,7 +30,7 @@
 
           // Fetch GPT response
           try {
-            const botResponse = await fetch("https://api-inference.huggingface.co/models/Mini-Omni2", {
+            const botResponse = await fetch("https://api-inference.huggingface.co/models/gpt2", {
               headers: { Authorization: "Bearer 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" },
               method: "POST",
               body: JSON.stringify({ inputs: userMessage }),
