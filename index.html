@@ -6,13 +6,13 @@
   <title>ApexNexus Chat</title>
 </head>
 <body>
-  <!-- Chat Window -->
+  <!-- This is the chat window where messages will show up -->
   <div id="chatWindow"></div>
 
-  <!-- User Input Field -->
+  <!-- Input field for typing the message -->
   <input id="messageInput" type="text" placeholder="Type a message...">
 
-  <!-- Send Button -->
+  <!-- Button to send the message -->
   <button id="sendButton">Send</button>
 
   <script>
@@ -31,18 +31,26 @@
         return data[0].generated_text;
       }
 
-      document.getElementById("sendButton").addEventListener("click", async () => {
-        const userMessage = document.getElementById("messageInput").value;
-        const botResponse = await getGPTResponse(userMessage);
+      // Add event listener to the send button
+      const sendButton = document.getElementById("sendButton");
+      if (sendButton) {
+        sendButton.addEventListener("click", async () => {
+          const userMessage = document.getElementById("messageInput").value;
+          const botResponse = await getGPTResponse(userMessage);
 
-        // Display user message and bot response in the chat window
-        document.getElementById("chatWindow").innerHTML += `<p><strong>User:</strong> ${userMessage}</p>`;
-        document.getElementById("chatWindow").innerHTML += `<p><strong>Bot:</strong> ${botResponse}</p>`;
+          // Display user and bot messages in chat window
+          const chatWindow = document.getElementById("chatWindow");
+          chatWindow.innerHTML += `<p><strong>User:</strong> ${userMessage}</p>`;
+          chatWindow.innerHTML += `<p><strong>Bot:</strong> ${botResponse}</p>`;
 
-        // Clear the input field after sending the message
-        document.getElementById("messageInput").value = '';
-      });
+          // Clear the input field
+          document.getElementById("messageInput").value = '';
+        });
+      } else {
+        console.error("Send button not found in the DOM");
+      }
     });
   </script>
 </body>
 </html>
+
