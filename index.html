@@ -6,10 +6,10 @@
   <title>ApexNexus Chat</title>
 </head>
 <body>
-  <!-- This is the chat window where messages will show up -->
+  <!-- Chat Window for displaying messages -->
   <div id="chatWindow"></div>
 
-  <!-- Input field for typing the message -->
+  <!-- Input field for user to type message -->
   <input id="messageInput" type="text" placeholder="Type a message...">
 
   <!-- Button to send the message -->
@@ -17,40 +17,35 @@
 
   <script>
     document.addEventListener("DOMContentLoaded", function() {
-      async function getGPTResponse(message) {
-        const response = await fetch("https://api-inference.huggingface.co/models/Mini-Omni2", {
-          headers: {
-            Authorization: "Bearer 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"
-          },
-          method: "POST",
-          body: JSON.stringify({
-            inputs: message,
-          }),
-        });
-        const data = await response.json();
-        return data[0].generated_text;
-      }
-
-      // Add event listener to the send button
+      // Ensure the DOM is fully loaded before running the script
       const sendButton = document.getElementById("sendButton");
-      if (sendButton) {
-        sendButton.addEventListener("click", async () => {
-          const userMessage = document.getElementById("messageInput").value;
-          const botResponse = await getGPTResponse(userMessage);
+      const messageInput = document.getElementById("messageInput");
+      const chatWindow = document.getElementById("chatWindow");
 
-          // Display user and bot messages in chat window
-          const chatWindow = document.getElementById("chatWindow");
+      if (sendButton && messageInput && chatWindow) {
+        sendButton.addEventListener("click", async () => {
+          const userMessage = messageInput.value;
+
+          // Fetch GPT response from Hugging Face
+          const botResponse = await fetch("https://api-inference.huggingface.co/models/Mini-Omni2", {
+            headers: { Authorization: "Bearer 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" },
+            method: "POST",
+            body: JSON.stringify({ inputs: userMessage }),
+          })
+          .then(response => response.json())
+          .then(data => data[0].generated_text);
+
+          // Display both user and bot messages in chat window
           chatWindow.innerHTML += `<p><strong>User:</strong> ${userMessage}</p>`;
           chatWindow.innerHTML += `<p><strong>Bot:</strong> ${botResponse}</p>`;
 
-          // Clear the input field
-          document.getElementById("messageInput").value = '';
+          // Clear input field
+          messageInput.value = '';
         });
       } else {
-        console.error("Send button not found in the DOM");
+        console.error("One or more elements are missing in the DOM.");
       }
     });
   </script>
 </body>
 </html>
-
