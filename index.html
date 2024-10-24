@@ -16,17 +16,19 @@
   <button id="sendButton">Send</button>
 
   <script>
+    // Wait until the DOM is fully loaded
     document.addEventListener("DOMContentLoaded", function() {
-      // Ensure the DOM is fully loaded before running the script
+      // Get the button and input field
       const sendButton = document.getElementById("sendButton");
       const messageInput = document.getElementById("messageInput");
       const chatWindow = document.getElementById("chatWindow");
 
+      // Ensure the elements exist
       if (sendButton && messageInput && chatWindow) {
         sendButton.addEventListener("click", async () => {
           const userMessage = messageInput.value;
 
-          // Fetch GPT response from Hugging Face
+          // Fetch GPT response
           const botResponse = await fetch("https://api-inference.huggingface.co/models/Mini-Omni2", {
             headers: { Authorization: "Bearer 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" },
             method: "POST",
@@ -35,15 +37,15 @@
           .then(response => response.json())
           .then(data => data[0].generated_text);
 
-          // Display both user and bot messages in chat window
+          // Show the message and response in the chat window
           chatWindow.innerHTML += `<p><strong>User:</strong> ${userMessage}</p>`;
           chatWindow.innerHTML += `<p><strong>Bot:</strong> ${botResponse}</p>`;
 
-          // Clear input field
+          // Clear the input field
           messageInput.value = '';
         });
       } else {
-        console.error("One or more elements are missing in the DOM.");
+        console.error("Could not find one or more required elements.");
       }
     });
   </script>
