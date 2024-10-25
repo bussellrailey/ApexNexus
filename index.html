@@ -9,31 +9,65 @@
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 20px;
-            background-color: #f9f9f9;
+            background-color: #f0f0f0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
         }
         #chatWindow {
-            border: 1px solid black;
+            flex: 1;
+            border: 1px solid #ccc;
             padding: 10px;
-            height: 300px;
-            overflow-y: scroll;
+            overflow-y: auto;
             margin-bottom: 10px;
             background-color: #ffffff;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
-        input[type="text"] {
-            width: 80%;
-            padding: 5px;
-            font-size: 16px;
+        #inputArea {
+            display: flex;
+            gap: 10px;
         }
-        button {
-            padding: 5px 10px;
+        #messageInput {
+            flex: 1;
+            padding: 10px;
             font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        #sendButton {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        #sendButton:hover {
+            background-color: #45a049;
+        }
+        .message {
+            margin-bottom: 10px;
+            padding: 8px;
+            border-radius: 4px;
+        }
+        .user-message {
+            background-color: #e6f3ff;
+            align-self: flex-end;
+        }
+        .bot-message {
+            background-color: #f0f0f0;
+            align-self: flex-start;
         }
     </style>
 </head>
 <body>
     <div id="chatWindow"></div>
-    <input id="messageInput" type="text" placeholder="Type a message..." />
-    <button id="sendButton">Send</button>
+    <div id="inputArea">
+        <input id="messageInput" type="text" placeholder="Type a message..." />
+        <button id="sendButton">Send</button>
+    </div>
 
     <script>
         document.addEventListener("DOMContentLoaded", () => {
@@ -41,72 +75,77 @@
             const messageInput = document.getElementById('messageInput');
             const chatWindow = document.getElementById('chatWindow');
 
-            // Function to preprocess the prompt before sending to GPT-2
+            const API_URL = 'https://api-inference.huggingface.co/models/gpt2';
+            const API_KEY = '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';
+
+            let conversationHistory = [];
+
             function preprocessPrompt(userMessage) {
-                const taskDirective = `Answer this question with only "1, 2, 3, 4, 5" in a single sentence. Do not include any other information.`;
-                return taskDirective;
+                const context = conversationHistory.join('\n');
+                return `${context}\nHuman: ${userMessage}\nAI:`;
             }
 
-            // Function to validate the response strictly (expecting only "1, 2, 3, 4, 5")
-            function validateResponse(response) {
-                const expectedResponse = '1, 2, 3, 4, 5';
-                return response.trim() === expectedResponse;
-            }
-
-            // Function to retry request if response doesn't meet expectations
-            async function retryRequest(userMessage) {
+            async function fetchBotResponse(userMessage) {
                 try {
-                    const botResponse = await fetch('https://api-inference.huggingface.co/models/gpt2', {
+                    const response = await fetch(API_URL, {
+                        method: 'POST',
                         headers: {
-                            Authorization: `Bearer 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`,
+                            'Authorization': `Bearer ${API_KEY}`,
                             'Content-Type': 'application/json'
                         },
-                        method: 'POST',
                         body: JSON.stringify({
                             inputs: preprocessPrompt(userMessage),
                             parameters: {
-                                max_length: 5,  // Keep responses very short
-                                temperature: 0.3 // Make the model more deterministic
+                                max_new_tokens: 50,
+                                temperature: 0.7,
+                                top_p: 0.9,
+                                do_sample: true
                             }
-                        }),
+                        })
                     });
 
-                    const responseText = await botResponse.text();
-                    const data = JSON.parse(responseText);
-
-                    if (Array.isArray(data) && data[0].generated_text) {
-                        const processedResponse = data[0].generated_text.trim();
-
-                        if (!validateResponse(processedResponse)) {
-                            appendMessage('Bot', 'Incorrect response, retrying...');
-                            return await retryRequest(userMessage); // Retry if invalid
-                        }
-
-                        appendMessage('Bot', processedResponse);
-                    } else {
-                        appendMessage('Error', 'Unexpected response format');
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
                     }
+
+                    const data = await response.json();
+                    return data[0].generated_text.split('AI:').pop().trim();
                 } catch (error) {
-                    appendMessage('Error', `An error occurred: ${error.message}`);
                     console.error('Error:', error);
+                    return 'Sorry, I encountered an error. Please try again.';
                 }
             }
 
-            // Function to append messages to the chat window
             function appendMessage(sender, message) {
-                chatWindow.innerHTML += `<p><strong>${sender}:</strong> ${message}</p>`;
-                chatWindow.scrollTop = chatWindow.scrollHeight; // Auto-scroll to the bottom
+                const messageElement = document.createElement('div');
+                messageElement.classList.add('message', `${sender.toLowerCase()}-message`);
+                messageElement.innerHTML = `<strong>${sender}:</strong> ${message}`;
+                chatWindow.appendChild(messageElement);
+                chatWindow.scrollTop = chatWindow.scrollHeight;
             }
 
-            // Event listener for sending a message
-            sendButton.addEventListener('click', async () => {
+            async function handleUserMessage() {
                 const userMessage = messageInput.value.trim();
-                if (!userMessage) return; // Ignore empty messages
+                if (!userMessage) return;
 
                 appendMessage('You', userMessage);
-                messageInput.value = ''; // Clear input field
+                messageInput.value = '';
 
-                await retryRequest(userMessage); // Process the message and retry if necessary
+                conversationHistory.push(`Human: ${userMessage}`);
+
+                const botResponse = await fetchBotResponse(userMessage);
+                appendMessage('Bot', botResponse);
+
+                conversationHistory.push(`AI: ${botResponse}`);
+
+                if (conversationHistory.length > 10) {
+                    conversationHistory = conversationHistory.slice(-10);
+                }
+            }
+
+            sendButton.addEventListener('click', handleUserMessage);
+            messageInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') handleUserMessage();
             });
         });
     </script>
