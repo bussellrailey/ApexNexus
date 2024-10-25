@@ -43,23 +43,14 @@
 
             // Function to preprocess the prompt before sending to GPT-2
             function preprocessPrompt(userMessage) {
-                const taskDirective = `Answer this question briefly: "${userMessage}". Provide a number as the answer if applicable.`;
+                const taskDirective = `Answer this question with only "1, 2, 3, 4, 5" in a single sentence. Do not include any other information.`;
                 return taskDirective;
             }
 
-            // Function to validate the response (expecting a number or direct answer)
+            // Function to validate the response strictly (expecting only "1, 2, 3, 4, 5")
             function validateResponse(response) {
-                const validResponses = ['5', 'five'];
-                const cleanedResponse = response.trim().toLowerCase();
-
-                return validResponses.some(valid => cleanedResponse.includes(valid));
-            }
-
-            // Function to post-process GPT-2's response
-            function postProcessResponse(response) {
-                let cleanedResponse = response.replace(/(\[.*?\]|\(.*?\)|\".*?\")/g, '');
-                cleanedResponse = cleanedResponse.trim();
-                return cleanedResponse;
+                const expectedResponse = '1, 2, 3, 4, 5';
+                return response.trim() === expectedResponse;
             }
 
             // Function to retry request if response doesn't meet expectations
@@ -74,8 +65,8 @@
                         body: JSON.stringify({
                             inputs: preprocessPrompt(userMessage),
                             parameters: {
-                                max_length: 10,  // Keep responses brief
-                                temperature: 0.4 // Make the model more deterministic
+                                max_length: 5,  // Keep responses very short
+                                temperature: 0.3 // Make the model more deterministic
                             }
                         }),
                     });
@@ -84,11 +75,11 @@
                     const data = JSON.parse(responseText);
 
                     if (Array.isArray(data) && data[0].generated_text) {
-                        const processedResponse = postProcessResponse(data[0].generated_text);
+                        const processedResponse = data[0].generated_text.trim();
 
                         if (!validateResponse(processedResponse)) {
-                            appendMessage('Bot', 'Invalid response, retrying...');
-                            processedResponse = await retryRequest(userMessage); // Retry if invalid
+                            appendMessage('Bot', 'Incorrect response, retrying...');
+                            return await retryRequest(userMessage); // Retry if invalid
                         }
 
                         appendMessage('Bot', processedResponse);
