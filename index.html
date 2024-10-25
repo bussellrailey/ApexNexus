@@ -43,8 +43,8 @@
 
             // Function to preprocess the prompt before sending to GPT-2
             function preprocessPrompt(userMessage) {
-                // Task broken into two steps: repeat the prompt, then answer the question
-                const taskDirective = `Repeat the following prompt exactly: "${userMessage}". Then, list the first five letters of the alphabet.`;
+                // Clearer, simpler instruction with no repetition directive
+                const taskDirective = `Answer the following task in one sentence: ${userMessage}. Limit your response to only one sentence.`;
                 return taskDirective;
             }
 
@@ -67,7 +67,7 @@
                         body: JSON.stringify({
                             inputs: preprocessPrompt(userMessage),
                             parameters: {
-                                max_length: 50,  // Adjust max length for more focused response
+                                max_length: 20,  // Reduce length further to force focus
                                 temperature: 0.5 // Lower temperature for more deterministic output
                             }
                         }),
