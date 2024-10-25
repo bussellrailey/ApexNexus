@@ -41,34 +41,18 @@
             const messageInput = document.getElementById('messageInput');
             const chatWindow = document.getElementById('chatWindow');
 
-            // Expected pattern for checking correct output (A, B, C, D, E)
-            const expectedPattern = ['a', 'b', 'c', 'd', 'e'];
-
             // Function to preprocess the prompt before sending to GPT-2
             function preprocessPrompt(userMessage) {
-                const taskDirective = "Provide a clear, structured answer to the question without repeating the prompt: ";
-                return taskDirective + userMessage;
-            }
-
-            // Function to detect if the response contains the correct pattern (A, B, C, D, E)
-            function isExpectedPattern(response) {
-                const normalizedResponse = response.toLowerCase().replace(/[^a-z]/g, ''); // Remove non-alphabetic characters
-                const letters = normalizedResponse.split(''); // Split response into individual characters
-
-                // Check if response contains the expected letters in the correct order
-                return expectedPattern.every((letter, index) => letters[index] === letter);
+                // Task broken into two steps: repeat the prompt, then answer the question
+                const taskDirective = `Repeat the following prompt exactly: "${userMessage}". Then, list the first five letters of the alphabet.`;
+                return taskDirective;
             }
 
             // Function to post-process GPT-2's response
-            function postProcessResponse(response, prompt) {
+            function postProcessResponse(response) {
                 let cleanedResponse = response.replace(/(\[.*?\]|\(.*?\)|\".*?\")/g, '');
-
-                cleanedResponse = cleanedResponse
-                    .split(' ')
-                    .filter(word => word.trim() !== '') // Remove empty words
-                    .join(' ');
-
-                return cleanedResponse.trim();
+                cleanedResponse = cleanedResponse.trim();
+                return cleanedResponse;
             }
 
             // Function to retry request if response doesn't meet expectations
@@ -83,8 +67,8 @@
                         body: JSON.stringify({
                             inputs: preprocessPrompt(userMessage),
                             parameters: {
-                                max_length: 30,  // Reduced length for tighter control
-                                temperature: 0.5 // Lowered temperature for more focused responses
+                                max_length: 50,  // Adjust max length for more focused response
+                                temperature: 0.5 // Lower temperature for more deterministic output
                             }
                         }),
                     });
@@ -93,13 +77,7 @@
                     const data = JSON.parse(responseText);
 
                     if (Array.isArray(data) && data[0].generated_text) {
-                        let processedResponse = postProcessResponse(data[0].generated_text, userMessage);
-
-                        if (!isExpectedPattern(processedResponse)) {
-                            appendMessage('Bot', 'Incorrect response, retrying...');
-                            processedResponse = await retryRequest(userMessage); // Retry if incorrect pattern
-                        }
-
+                        const processedResponse = postProcessResponse(data[0].generated_text);
                         appendMessage('Bot', processedResponse);
                     } else {
                         appendMessage('Error', 'Unexpected response format');
