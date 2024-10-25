@@ -43,9 +43,16 @@
 
             // Function to preprocess the prompt before sending to GPT-2
             function preprocessPrompt(userMessage) {
-                // Clearer, simpler instruction with no repetition directive
-                const taskDirective = `Answer the following task in one sentence: ${userMessage}. Limit your response to only one sentence.`;
+                const taskDirective = `Answer this question briefly: "${userMessage}". Provide a number as the answer if applicable.`;
                 return taskDirective;
+            }
+
+            // Function to validate the response (expecting a number or direct answer)
+            function validateResponse(response) {
+                const validResponses = ['5', 'five'];
+                const cleanedResponse = response.trim().toLowerCase();
+
+                return validResponses.some(valid => cleanedResponse.includes(valid));
             }
 
             // Function to post-process GPT-2's response
@@ -67,8 +74,8 @@
                         body: JSON.stringify({
                             inputs: preprocessPrompt(userMessage),
                             parameters: {
-                                max_length: 20,  // Reduce length further to force focus
-                                temperature: 0.5 // Lower temperature for more deterministic output
+                                max_length: 10,  // Keep responses brief
+                                temperature: 0.4 // Make the model more deterministic
                             }
                         }),
                     });
@@ -78,6 +85,12 @@
 
                     if (Array.isArray(data) && data[0].generated_text) {
                         const processedResponse = postProcessResponse(data[0].generated_text);
+
+                        if (!validateResponse(processedResponse)) {
+                            appendMessage('Bot', 'Invalid response, retrying...');
+                            processedResponse = await retryRequest(userMessage); // Retry if invalid
+                        }
+
                         appendMessage('Bot', processedResponse);
                     } else {
                         appendMessage('Error', 'Unexpected response format');
