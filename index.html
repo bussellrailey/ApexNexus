@@ -85,35 +85,36 @@
                 return `${context}\nHuman: ${userMessage}\nAI:`;
             }
 
-            async function fetchBotResponse(userMessage) {
-                try {
-                    const response = await fetch(API_URL, {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${API_KEY}`,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            inputs: preprocessPrompt(userMessage),
-                            parameters: {
-                                max_new_tokens: 50,
-                                temperature: 0.7,
-                                top_p: 0.9,
-                                do_sample: true
-                            }
-                        })
-                    });
+            async function fetchBotResponse(userMessage, maxRetries = 3) {
+                for (let i = 0; i < maxRetries; i++) {
+                    try {
+                        const response = await fetch(API_URL, {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${API_KEY}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                inputs: preprocessPrompt(userMessage),
+                                parameters: {
+                                    max_new_tokens: 100,
+                                    temperature: 0.7,
+                                    top_p: 0.9,
+                                    do_sample: true
+                                }
+                            })
+                        });
 
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
+                        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+                        const data = await response.json();
+                        return data[0].generated_text.split('AI:').pop().trim();
+                    } catch (error) {
+                        console.error(`Attempt ${i + 1} failed with error`, error);
+                        if (i === maxRetries - 1) return 'Sorry, I encountered an error. Please try again.';
                     }
-
-                    const data = await response.json();
-                    return data[0].generated_text.split('AI:').pop().trim();
-                } catch (error) {
-                    console.error('Error:', error);
-                    return 'Sorry, I encountered an error. Please try again.';
                 }
+                return ''; // Fallback in case of failure
             }
 
             function appendMessage(sender, message) {
@@ -121,7 +122,7 @@
                 messageElement.classList.add('message', `${sender.toLowerCase()}-message`);
                 messageElement.innerHTML = `<strong>${sender}:</strong> ${message}`;
                 chatWindow.appendChild(messageElement);
-                chatWindow.scrollTop = chatWindow.scrollHeight;
+                chatWindow.scrollTop = chatWindow.scrollHeight; // Auto-scroll to the bottom
             }
 
             async function handleUserMessage() {
@@ -136,10 +137,10 @@
                 const botResponse = await fetchBotResponse(userMessage);
                 appendMessage('Bot', botResponse);
 
-                conversationHistory.push(`AI: ${botResponse}`);
+                conversationHistory.push(`AI:${botResponse}`);
 
                 if (conversationHistory.length > 10) {
-                    conversationHistory = conversationHistory.slice(-10);
+                    conversationHistory = conversationHistory.slice(-10); // Keep last 10 exchanges
                 }
             }
 
