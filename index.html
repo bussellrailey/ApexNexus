@@ -57,6 +57,28 @@
             return !!pattern.test(message);
         }
 
+        function handleCountdown(message) {
+            const countDownMatch = message.match(/count\s*(down|up)\s*from\s*(-?\d+)\s*(and\s*stop\s*(at|on)\s*(-?\d+))?/i);
+            if (countDownMatch) {
+                const direction = countDownMatch[1].toLowerCase();
+                const start = parseInt(countDownMatch[2]);
+                const stop = parseInt(countDownMatch[5]) || (direction === 'down' ? 0 : 10); // default stop
+
+                let count = [];
+                if (direction === 'down') {
+                    for (let i = start; i >= stop; i--) {
+                        count.push(i);
+                    }
+                } else {
+                    for (let i = start; i <= stop; i++) {
+                        count.push(i);
+                    }
+                }
+                return count.join(', ');
+            }
+            return null;
+        }
+
         async function botResponse(message) {
             if (isValidURL(message)) {
                 // Handle URL extraction via backend API
@@ -127,6 +149,10 @@
                         response = 'Hello! How can I assist you today?';
                     } else if (message.toLowerCase().includes('your name')) {
                         response = "I'm your friendly chatbot!";
+                    } else if (message.toLowerCase().includes('capabilities')) {
+                        response = "I can chat, count down or up, and handle basic arithmetic!";
+                    } else if (message.toLowerCase().includes('alphabet')) {
+                        response = "Sure! The alphabet starts with A, B, C...and goes all the way to Z!";
                     } else if (message.toLowerCase().match(/(\d+)\s*\*\s*(\d+)/)) {
                         const [_, num1, num2] = message.match(/(\d+)\s*\*\s*(\d+)/);
                         response = `${num1} * ${num2} = ${num1 * num2}`;
@@ -138,11 +164,15 @@
                         } else {
                             response = "I can't calculate that.";
                         }
-                    } else if (message.toLowerCase().includes('count down')) {
-                        response = '10, 9, 8, 7, 6, 5';
                     } else {
-                        // Send to GPT-2 model for further processing
-                        response = await botResponse(message);
+                        // Custom countdown handler
+                        const countdownResult = handleCountdown(message);
+                        if (countdownResult) {
+                            response = countdownResult;
+                        } else {
+                            // Send to GPT-2 model for further processing
+                            response = await botResponse(message);
+                        }
                     }
 
                     addMessage('Bot', response);
