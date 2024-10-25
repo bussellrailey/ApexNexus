@@ -59,7 +59,8 @@
                         try {
                             const data = JSON.parse(responseText);
                             console.log('Parsed data:', data); // Log parsed data
-                            // Check if data is an array and get the first element's generated_text
+                            
+                            // Accessing the generated_text from the first object
                             if (data && Array.isArray(data) && data.length > 0 && data[0].generated_text) {
                                 chatWindow.innerHTML += `<p><strong>Bot:</strong> ${data[0].generated_text}</p>`; // Access generated_text correctly
                             } else {
