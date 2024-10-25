@@ -41,25 +41,22 @@
             const messageInput = document.getElementById('messageInput');
             const chatWindow = document.getElementById('chatWindow');
 
-            // List of common stopwords to filter from responses
-            const stopwords = ['the', 'is', 'and', 'or', 'of', 'to', 'in', 'a', 'for', 'on'];
-
-            // Additional irrelevant phrases for filtering out bad responses
-            const irrelevantPhrases = [
-                'youtube', 'enrollment', 'confidential', 'professor', 'lecturer', 'song', 'dangerous',
-                'spots', 'watch', 'program', 'scary', 'student', 'professor', 'assignment'
-            ];
+            // Expected pattern for checking correct output (A, B, C, D, E)
+            const expectedPattern = ['a', 'b', 'c', 'd', 'e'];
 
             // Function to preprocess the prompt before sending to GPT-2
             function preprocessPrompt(userMessage) {
-                const taskDirective = "Provide a clear, novel answer without repeating the prompt. Focus on originality: ";
+                const taskDirective = "Provide a clear, structured answer to the question without repeating the prompt: ";
                 return taskDirective + userMessage;
             }
 
-            // Function to detect incoherent or irrelevant responses
-            function isIncoherentResponse(response) {
-                // Check for incoherent outputs by detecting irrelevant phrases
-                return irrelevantPhrases.some(phrase => response.toLowerCase().includes(phrase));
+            // Function to detect if the response contains the correct pattern (A, B, C, D, E)
+            function isExpectedPattern(response) {
+                const normalizedResponse = response.toLowerCase().replace(/[^a-z]/g, ''); // Remove non-alphabetic characters
+                const letters = normalizedResponse.split(''); // Split response into individual characters
+
+                // Check if response contains the expected letters in the correct order
+                return expectedPattern.every((letter, index) => letters[index] === letter);
             }
 
             // Function to post-process GPT-2's response
@@ -68,19 +65,13 @@
 
                 cleanedResponse = cleanedResponse
                     .split(' ')
-                    .filter(word => !stopwords.includes(word.toLowerCase()))
-                    .join(' ');
-
-                const promptWords = prompt.toLowerCase().split(' ');
-                cleanedResponse = cleanedResponse
-                    .split(' ')
-                    .filter(word => !promptWords.includes(word.toLowerCase()))
+                    .filter(word => word.trim() !== '') // Remove empty words
                     .join(' ');
 
                 return cleanedResponse.trim();
             }
 
-            // Function to retry request if response is incoherent
+            // Function to retry request if response doesn't meet expectations
             async function retryRequest(userMessage) {
                 try {
                     const botResponse = await fetch('https://api-inference.huggingface.co/models/gpt2', {
@@ -92,8 +83,8 @@
                         body: JSON.stringify({
                             inputs: preprocessPrompt(userMessage),
                             parameters: {
-                                max_length: 75,  // Reduced length to avoid long off-topic responses
-                                temperature: 0.6
+                                max_length: 30,  // Reduced length for tighter control
+                                temperature: 0.5 // Lowered temperature for more focused responses
                             }
                         }),
                     });
@@ -104,9 +95,9 @@
                     if (Array.isArray(data) && data[0].generated_text) {
                         let processedResponse = postProcessResponse(data[0].generated_text, userMessage);
 
-                        if (isIncoherentResponse(processedResponse)) {
-                            appendMessage('Bot', 'Incoherent response, retrying...');
-                            processedResponse = await retryRequest(userMessage); // Retry on incoherence
+                        if (!isExpectedPattern(processedResponse)) {
+                            appendMessage('Bot', 'Incorrect response, retrying...');
+                            processedResponse = await retryRequest(userMessage); // Retry if incorrect pattern
                         }
 
                         appendMessage('Bot', processedResponse);
