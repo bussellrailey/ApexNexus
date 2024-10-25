@@ -60,11 +60,11 @@
                             const data = JSON.parse(responseText);
                             console.log('Parsed data:', data); // Log parsed data
                             
-                            // Accessing the generated_text from the first object
+                            // Accessing the generated_text
                             if (data && Array.isArray(data) && data.length > 0 && data[0].generated_text) {
-                                chatWindow.innerHTML += `<p><strong>Bot:</strong> ${data[0].generated_text}</p>`; // Access generated_text correctly
+                                chatWindow.innerHTML += `<p><strong>Bot:</strong> ${data[0].generated_text}</p>`; // Correctly access generated_text
                             } else {
-                                chatWindow.innerHTML += `<p><strong>Error:</strong> Unexpected response format</p>`;
+                                chatWindow.innerHTML += `<p><strong>Error:</strong> Unexpected response format. Raw response: ${responseText}</p>`;
                             }
                         } catch (parseError) {
                             throw new Error('Failed to parse response: ' + parseError.message);
