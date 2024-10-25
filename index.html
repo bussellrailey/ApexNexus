@@ -40,7 +40,7 @@
                     try {
                         const botResponse = await fetch('https://api-inference.huggingface.co/models/gpt2', {
                             headers: {
-                                Authorization: `Bearer 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`,
+                                Authorization: `Bearer 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`, // Your API key
                                 'Content-Type': 'application/json'
                             },
                             method: 'POST',
@@ -50,7 +50,7 @@
                         console.log('Response Status:', botResponse.status); // Log status code
                         
                         if (!botResponse.ok) {
-                            throw new Error(`API responded with status: ${botResponse.status}`);
+                            throw new Error(`API responded with status: ${botResponse.status} - ${botResponse.statusText}`);
                         }
 
                         const responseText = await botResponse.text();
