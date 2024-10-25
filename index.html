@@ -96,7 +96,7 @@
                     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
                     const data = await response.json();
-                    return data[0].generated_text;
+                    return data[0].generated_text || "No response generated.";
                 } catch (error) {
                     console.error('Error:', error);
                     return 'Sorry, I encountered an error. Please try again.';
@@ -108,7 +108,7 @@
                 messageElement.classList.add('message', `${sender.toLowerCase()}-message`);
                 messageElement.textContent = `${sender}: ${message}`;
                 chatWindow.appendChild(messageElement);
-                chatWindow.scrollTop = chatWindow.scrollHeight;
+                chatWindow.scrollTop = chatWindow.scrollHeight; // Auto-scroll to the bottom
             }
 
             async function handleUserMessage() {
