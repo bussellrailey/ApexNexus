@@ -43,15 +43,17 @@
 
             // Function to preprocess the prompt before sending to GPT-2
             function preprocessPrompt(userMessage) {
-                const taskDirective = "Provide a clear, structured answer without repetition. ";
+                // Refining the task directive for GPT-2 to better follow instructions
+                const taskDirective = "Create a structured and novel response without repeating any part of the prompt. Focus on clear, logical information delivery: ";
                 return taskDirective + userMessage;
             }
 
             // Function to post-process GPT-2's response
             function postProcessResponse(response) {
-                // Remove any text inside brackets or parentheses and trim whitespace
-                let cleanedResponse = response.replace(/(\[.*?\]|\(.*?\))/g, '');
-                cleanedResponse = cleanedResponse.trim();
+                // Remove any text inside brackets, parentheses, or quotes and clean unnecessary parts
+                let cleanedResponse = response.replace(/(\[.*?\]|\(.*?\)|\".*?\")/g, '');
+                cleanedResponse = cleanedResponse.replace(/(?:\bDescribe\b|\bUse\b|\bImagine\b).*/g, ''); // Remove repeated phrases or unwanted leftovers
+                cleanedResponse = cleanedResponse.trim(); // Trim any remaining whitespace
                 return cleanedResponse;
             }
 
@@ -80,7 +82,7 @@
                             inputs: preprocessPrompt(userMessage), // Use preprocessed message
                             parameters: {
                                 max_length: 100,  // Limit response length to 100 tokens
-                                temperature: 0.7  // Set temperature for reduced randomness
+                                temperature: 0.6  // Slightly lower temperature for more focused responses
                             }
                         }),
                     });
@@ -120,3 +122,4 @@
     </script>
 </body>
 </html>
+
