@@ -41,20 +41,34 @@
             const messageInput = document.getElementById('messageInput');
             const chatWindow = document.getElementById('chatWindow');
 
+            // List of common stopwords to filter from responses
+            const stopwords = ['the', 'is', 'and', 'or', 'of', 'to', 'in', 'a', 'for', 'on'];
+
             // Function to preprocess the prompt before sending to GPT-2
             function preprocessPrompt(userMessage) {
-                // Refining the task directive for GPT-2 to better follow instructions
-                const taskDirective = "Create a structured and novel response without repeating any part of the prompt. Focus on clear, logical information delivery: ";
+                const taskDirective = "Provide a clear, novel answer without repeating the prompt. Focus on originality: ";
                 return taskDirective + userMessage;
             }
 
             // Function to post-process GPT-2's response
-            function postProcessResponse(response) {
-                // Remove any text inside brackets, parentheses, or quotes and clean unnecessary parts
+            function postProcessResponse(response, prompt) {
+                // Remove text inside brackets, parentheses, quotes, and redundant prompt keywords
                 let cleanedResponse = response.replace(/(\[.*?\]|\(.*?\)|\".*?\")/g, '');
-                cleanedResponse = cleanedResponse.replace(/(?:\bDescribe\b|\bUse\b|\bImagine\b).*/g, ''); // Remove repeated phrases or unwanted leftovers
-                cleanedResponse = cleanedResponse.trim(); // Trim any remaining whitespace
-                return cleanedResponse;
+
+                // Remove stopwords from the response
+                cleanedResponse = cleanedResponse
+                    .split(' ')
+                    .filter(word => !stopwords.includes(word.toLowerCase()))
+                    .join(' ');
+
+                // Ensure response does not contain repeated prompt words
+                const promptWords = prompt.toLowerCase().split(' ');
+                cleanedResponse = cleanedResponse
+                    .split(' ')
+                    .filter(word => !promptWords.includes(word.toLowerCase()))
+                    .join(' ');
+
+                return cleanedResponse.trim();
             }
 
             // Function to append messages to the chat window
@@ -105,7 +119,7 @@
                         console.log('Parsed data:', data);
 
                         if (Array.isArray(data) && data[0].generated_text) {
-                            const processedResponse = postProcessResponse(data[0].generated_text);
+                            const processedResponse = postProcessResponse(data[0].generated_text, userMessage);
                             appendMessage('Bot', processedResponse);
                         } else {
                             appendMessage('Error', 'Unexpected response format');
@@ -122,4 +136,3 @@
     </script>
 </body>
 </html>
-
