@@ -58,10 +58,9 @@
 
                         try {
                             const data = JSON.parse(responseText);
-                            // Log the structure of the data to understand how to access it
-                            console.log('Parsed data:', data);
+                            console.log('Parsed data:', data); // Log parsed data
                             if (data && Array.isArray(data) && data.length > 0) {
-                                chatWindow.innerHTML += `<p><strong>Bot:</strong> ${data[0].generated_text}</p>`; // Access the first element
+                                chatWindow.innerHTML += `<p><strong>Bot:</strong> ${data[0].generated_text}</p>`; // Correctly access the generated text
                             } else {
                                 chatWindow.innerHTML += `<p><strong>Error:</strong> Unexpected response format</p>`;
                             }
