@@ -7,6 +7,9 @@
     <style>
         body {
             font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f9f9f9;
         }
         #chatWindow {
             border: 1px solid black;
@@ -14,67 +17,74 @@
             height: 300px;
             overflow-y: scroll;
             margin-bottom: 10px;
+            background-color: #ffffff;
         }
         input[type="text"] {
             width: 80%;
+            padding: 5px;
+            font-size: 16px;
+        }
+        button {
+            padding: 5px 10px;
+            font-size: 16px;
         }
     </style>
 </head>
 <body>
     <div id="chatWindow"></div>
-    <input id="messageInput" type="text" placeholder="Type a message...">
+    <input id="messageInput" type="text" placeholder="Type a message..." />
     <button id="sendButton">Send</button>
 
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
+        document.addEventListener("DOMContentLoaded", () => {
             const sendButton = document.getElementById('sendButton');
             const messageInput = document.getElementById('messageInput');
             const chatWindow = document.getElementById('chatWindow');
 
             sendButton.addEventListener('click', async () => {
-                const userMessage = messageInput.value;
-                if (userMessage) {
-                    chatWindow.innerHTML += `<p><strong>You:</strong> ${userMessage}</p>`;
-                    messageInput.value = ''; // Clear input field after sending
+                const userMessage = messageInput.value.trim();
+                if (!userMessage) return; // Ignore empty messages
 
-                    try {
-                        const botResponse = await fetch('https://api-inference.huggingface.co/models/gpt2', {
-                            headers: {
-                                Authorization: `Bearer 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`, // Your API key
-                                'Content-Type': 'application/json'
-                            },
-                            method: 'POST',
-                            body: JSON.stringify({ inputs: userMessage }),
-                        });
+                appendMessage('You', userMessage);
+                messageInput.value = ''; // Clear input field
 
-                        console.log('Response Status:', botResponse.status); // Log status code
-                        
-                        if (!botResponse.ok) {
-                            throw new Error(`API responded with status: ${botResponse.status} - ${botResponse.statusText}`);
-                        }
+                try {
+                    const botResponse = await fetch('https://api-inference.huggingface.co/models/gpt2', {
+                        headers: {
+                            Authorization: `Bearer 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`, // Your API key
+                            'Content-Type': 'application/json'
+                        },
+                        method: 'POST',
+                        body: JSON.stringify({ inputs: userMessage }),
+                    });
 
-                        const responseText = await botResponse.text();
-                        console.log('Raw response:', responseText); // Log the raw response
+                    console.log('Response Status:', botResponse.status);
 
-                        try {
-                            const data = JSON.parse(responseText);
-                            console.log('Parsed data:', data); // Log parsed data
-                            
-                            // Accessing the generated_text
-                            if (data && Array.isArray(data) && data.length > 0 && data[0].generated_text) {
-                                chatWindow.innerHTML += `<p><strong>Bot:</strong> ${data[0].generated_text}</p>`; // Correctly access generated_text
-                            } else {
-                                chatWindow.innerHTML += `<p><strong>Error:</strong> Unexpected response format. Raw response: ${responseText}</p>`;
-                            }
-                        } catch (parseError) {
-                            throw new Error('Failed to parse response: ' + parseError.message);
-                        }
-                    } catch (error) {
-                        chatWindow.innerHTML += `<p><strong>Error:</strong> ${error.message}</p>`;
-                        console.error('Error:', error);
+                    if (!botResponse.ok) {
+                        throw new Error(`API responded with status: ${botResponse.status} - ${botResponse.statusText}`);
                     }
+
+                    const responseText = await botResponse.text();
+                    console.log('Raw response:', responseText);
+
+                    const data = JSON.parse(responseText);
+                    console.log('Parsed data:', data);
+
+                    if (Array.isArray(data) && data[0].generated_text) {
+                        appendMessage('Bot', data[0].generated_text);
+                    } else {
+                        appendMessage('Error', 'Unexpected response format');
+                    }
+                } catch (error) {
+                    appendMessage('Error', error.message);
+                    console.error('Error:', error);
                 }
             });
+
+            function appendMessage(sender, message) {
+                chatWindow.innerHTML += `<p><strong>${sender}:</strong> ${message}</p>`;
+                chatWindow.scrollTop = chatWindow.scrollHeight; // Auto-scroll to the bottom
+            }
         });
     </script>
 </body>
