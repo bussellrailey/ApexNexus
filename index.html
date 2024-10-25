@@ -44,17 +44,22 @@
             // List of common stopwords to filter from responses
             const stopwords = ['the', 'is', 'and', 'or', 'of', 'to', 'in', 'a', 'for', 'on'];
 
+            // Additional irrelevant phrases for filtering out bad responses
+            const irrelevantPhrases = [
+                'youtube', 'enrollment', 'confidential', 'professor', 'lecturer', 'song', 'dangerous',
+                'spots', 'watch', 'program', 'scary', 'student', 'professor', 'assignment'
+            ];
+
             // Function to preprocess the prompt before sending to GPT-2
             function preprocessPrompt(userMessage) {
                 const taskDirective = "Provide a clear, novel answer without repeating the prompt. Focus on originality: ";
                 return taskDirective + userMessage;
             }
 
-            // Function to detect incoherent or nonsensical responses
+            // Function to detect incoherent or irrelevant responses
             function isIncoherentResponse(response) {
-                // Simple checks for common patterns in incoherent outputs (e.g., too many numbers, unrelated text)
-                const incoherenceIndicators = ['$', 'confidential', 'enrolled', 'youtube', 'song'];
-                return incoherenceIndicators.some(indicator => response.toLowerCase().includes(indicator));
+                // Check for incoherent outputs by detecting irrelevant phrases
+                return irrelevantPhrases.some(phrase => response.toLowerCase().includes(phrase));
             }
 
             // Function to post-process GPT-2's response
@@ -75,12 +80,6 @@
                 return cleanedResponse.trim();
             }
 
-            // Function to append messages to the chat window
-            function appendMessage(sender, message) {
-                chatWindow.innerHTML += `<p><strong>${sender}:</strong> ${message}</p>`;
-                chatWindow.scrollTop = chatWindow.scrollHeight; // Auto-scroll to the bottom
-            }
-
             // Function to retry request if response is incoherent
             async function retryRequest(userMessage) {
                 try {
@@ -93,7 +92,7 @@
                         body: JSON.stringify({
                             inputs: preprocessPrompt(userMessage),
                             parameters: {
-                                max_length: 100,
+                                max_length: 75,  // Reduced length to avoid long off-topic responses
                                 temperature: 0.6
                             }
                         }),
@@ -106,7 +105,7 @@
                         let processedResponse = postProcessResponse(data[0].generated_text, userMessage);
 
                         if (isIncoherentResponse(processedResponse)) {
-                            appendMessage('Bot', 'Response was incoherent, retrying...');
+                            appendMessage('Bot', 'Incoherent response, retrying...');
                             processedResponse = await retryRequest(userMessage); // Retry on incoherence
                         }
 
@@ -118,6 +117,12 @@
                     appendMessage('Error', `An error occurred: ${error.message}`);
                     console.error('Error:', error);
                 }
+            }
+
+            // Function to append messages to the chat window
+            function appendMessage(sender, message) {
+                chatWindow.innerHTML += `<p><strong>${sender}:</strong> ${message}</p>`;
+                chatWindow.scrollTop = chatWindow.scrollHeight; // Auto-scroll to the bottom
             }
 
             // Event listener for sending a message
