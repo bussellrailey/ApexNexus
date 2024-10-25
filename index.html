@@ -55,7 +55,7 @@
                             'Content-Type': 'application/json'
                         },
                         method: 'POST',
-                        body: JSON.stringify({ inputs: userMessage }),
+                        body: JSON.stringify({ inputs: userMessage }), // Send the user message directly
                     });
 
                     console.log('Response Status:', botResponse.status);
