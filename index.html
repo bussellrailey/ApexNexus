@@ -118,9 +118,33 @@
             if (message) {
                 addMessage('You', message);
                 userInput.value = '';
-                
+
                 setTimeout(async () => {
-                    const response = await botResponse(message);
+                    let response = '';
+                    
+                    // Check if the input is something the bot can handle directly
+                    if (message.toLowerCase().includes('hello')) {
+                        response = 'Hello! How can I assist you today?';
+                    } else if (message.toLowerCase().includes('your name')) {
+                        response = "I'm your friendly chatbot!";
+                    } else if (message.toLowerCase().match(/(\d+)\s*\*\s*(\d+)/)) {
+                        const [_, num1, num2] = message.match(/(\d+)\s*\*\s*(\d+)/);
+                        response = `${num1} * ${num2} = ${num1 * num2}`;
+                    } else if (message.toLowerCase().includes('square root')) {
+                        const match = message.match(/square root of (\d+)/);
+                        if (match) {
+                            const number = parseInt(match[1], 10);
+                            response = `The square root of ${number} is approximately ${Math.sqrt(number).toFixed(2)}`;
+                        } else {
+                            response = "I can't calculate that.";
+                        }
+                    } else if (message.toLowerCase().includes('count down')) {
+                        response = '10, 9, 8, 7, 6, 5';
+                    } else {
+                        // Send to GPT-2 model for further processing
+                        response = await botResponse(message);
+                    }
+
                     addMessage('Bot', response);
                 }, 500);
             }
