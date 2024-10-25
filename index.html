@@ -61,7 +61,11 @@
                     console.log('Response Status:', botResponse.status);
 
                     if (!botResponse.ok) {
-                        throw new Error(`API responded with status: ${botResponse.status} - ${botResponse.statusText}`);
+                        if (botResponse.status === 503) {
+                            appendMessage('Error', 'The service is currently unavailable. Please try again later.');
+                        } else {
+                            throw new Error(`API responded with status: ${botResponse.status} - ${botResponse.statusText}`);
+                        }
                     }
 
                     const responseText = await botResponse.text();
