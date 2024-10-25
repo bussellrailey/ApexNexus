@@ -41,6 +41,27 @@
             const messageInput = document.getElementById('messageInput');
             const chatWindow = document.getElementById('chatWindow');
 
+            // Function to preprocess the prompt before sending to GPT-2
+            function preprocessPrompt(userMessage) {
+                const taskDirective = "Provide a clear, structured answer without repetition. ";
+                return taskDirective + userMessage;
+            }
+
+            // Function to post-process GPT-2's response
+            function postProcessResponse(response) {
+                // Remove any text inside brackets or parentheses and trim whitespace
+                let cleanedResponse = response.replace(/(\[.*?\]|\(.*?\))/g, '');
+                cleanedResponse = cleanedResponse.trim();
+                return cleanedResponse;
+            }
+
+            // Function to append messages to the chat window
+            function appendMessage(sender, message) {
+                chatWindow.innerHTML += `<p><strong>${sender}:</strong> ${message}</p>`;
+                chatWindow.scrollTop = chatWindow.scrollHeight; // Auto-scroll to the bottom
+            }
+
+            // Event listener for sending a message
             sendButton.addEventListener('click', async () => {
                 const userMessage = messageInput.value.trim();
                 if (!userMessage) return; // Ignore empty messages
@@ -55,7 +76,13 @@
                             'Content-Type': 'application/json'
                         },
                         method: 'POST',
-                        body: JSON.stringify({ inputs: userMessage }), // Send the user message directly
+                        body: JSON.stringify({
+                            inputs: preprocessPrompt(userMessage), // Use preprocessed message
+                            parameters: {
+                                max_length: 100,  // Limit response length to 100 tokens
+                                temperature: 0.7  // Set temperature for reduced randomness
+                            }
+                        }),
                     });
 
                     console.log('Response Status:', botResponse.status);
@@ -71,24 +98,24 @@
                     const responseText = await botResponse.text();
                     console.log('Raw response:', responseText);
 
-                    const data = JSON.parse(responseText);
-                    console.log('Parsed data:', data);
+                    if (botResponse.headers.get('Content-Type').includes('application/json')) {
+                        const data = JSON.parse(responseText);
+                        console.log('Parsed data:', data);
 
-                    if (Array.isArray(data) && data[0].generated_text) {
-                        appendMessage('Bot', data[0].generated_text);
+                        if (Array.isArray(data) && data[0].generated_text) {
+                            const processedResponse = postProcessResponse(data[0].generated_text);
+                            appendMessage('Bot', processedResponse);
+                        } else {
+                            appendMessage('Error', 'Unexpected response format');
+                        }
                     } else {
-                        appendMessage('Error', 'Unexpected response format');
+                        appendMessage('Error', 'Received non-JSON response');
                     }
                 } catch (error) {
-                    appendMessage('Error', error.message);
+                    appendMessage('Error', `An error occurred: ${error.message}`);
                     console.error('Error:', error);
                 }
             });
-
-            function appendMessage(sender, message) {
-                chatWindow.innerHTML += `<p><strong>${sender}:</strong> ${message}</p>`;
-                chatWindow.scrollTop = chatWindow.scrollHeight; // Auto-scroll to the bottom
-            }
         });
     </script>
 </body>
