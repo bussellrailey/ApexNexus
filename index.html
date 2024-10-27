@@ -193,6 +193,11 @@
 
                 setTimeout(async () => {
                     let response = '';
+            if (getConstant(message)) {
+    response = getConstant(message);
+} else if (message.toLowerCase().includes('hello')) {
+    response = 'Hello! How can I assist you today?';
+}
 
                     if (message.toLowerCase().includes('hello')) {
                         response = 'Hello! How can I assist you today?';
@@ -250,6 +255,13 @@ function getTrivia() {
 
     triviaUsed.push(fact);  // Mark fact as used
     return fact;
+}
+function getConstant(message) {
+    if (message.toLowerCase().includes("pi")) {
+        return "Pi to the 10th decimal is 3.1415926535";
+    }
+    // Additional constants can be added here
+    return null;
 }
 
                     } else if (message.toLowerCase().includes('system info')) {
