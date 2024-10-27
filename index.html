@@ -186,7 +186,6 @@
                 }
             }
         }
-
         async function systemInfoRequest() {
             try {
                 const response = await fetch(`https://your-api-endpoint/system-info`, {
@@ -195,11 +194,9 @@
                         'Authorization': `Bearer ${apiKey}`
                     }
                 });
-
                 if (!response.ok) {
                     throw new Error(`API error: ${response.status}`);
                 }
-
                 const data = await response.json();
                 return JSON.stringify(data, null, 2);
             } catch (error) {
@@ -207,8 +204,7 @@
                 return "Unable to fetch system information.";
             }
         }
-
-        async function handleUserInput() {
+         async function handleUserInput() {
             const message = userInput.value.trim();
             if (message) {
                 addMessage('You', message);
@@ -228,19 +224,17 @@
                         response = getTrivia();
                     } else {
                         response = await botResponse(message);
-
-                        // Fallback response if botResponse doesn't understand
+                        
+                    // Fallback response if botResponse doesn't understand
                         if (!response || response.toLowerCase().includes('error')) {
                             response = "I'm not sure I understand that request. Could you clarify?";
                         }
                     }
-
                     addMessage('Bot', response);
                     addToMemory(message, response);
                 }, 500);
             }
         }
-
         sendButton.addEventListener('click', handleUserInput);
         userInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
