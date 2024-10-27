@@ -40,6 +40,27 @@
         const apiKey = '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';  // API key for integration
         const modelName = 'gpt-2';  // Replace with your GPT-2 model name if needed
 
+        // Memory setup
+        const memory = {
+            userMessages: [],
+            botResponses: []
+        };
+        const MEMORY_LIMIT = 5;
+
+        function addToMemory(userMessage, botResponse) {
+            memory.userMessages.push(userMessage);
+            memory.botResponses.push(botResponse);
+
+            if (memory.userMessages.length > MEMORY_LIMIT) memory.userMessages.shift();
+            if (memory.botResponses.length > MEMORY_LIMIT) memory.botResponses.shift();
+        }
+
+        function recallMemory() {
+            let recentUser = memory.userMessages.slice(-2).join(' | ');
+            let recentBot = memory.botResponses.slice(-2).join(' | ');
+            return `You recently mentioned: "${recentUser}" and I said: "${recentBot}".`;
+        }
+
         function addMessage(sender, message) {
             const messageElement = document.createElement('p');
             messageElement.innerHTML = `<strong>${sender}:</strong> ${message}`;
@@ -48,12 +69,12 @@
         }
 
         function isValidURL(message) {
-            const pattern = new RegExp('^(https?:\\/\\/)?'+ // protocol
-                '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.?)+[a-z]{2,}|'+ // domain name
-                '((\\d{1,3}\\.){3}\\d{1,3}))'+ // OR ip (v4) address
-                '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*'+ // port and path
-                '(\\?[;&a-z\\d%_.~+=-]*)?'+ // query string
-                '(\\#[-a-z\\d_]*)?$','i'); // fragment locator
+            const pattern = new RegExp('^(https?:\\/\\/)?'+
+                '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.?)+[a-z]{2,}|'+ 
+                '((\\d{1,3}\\.){3}\\d{1,3}))'+
+                '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*'+ 
+                '(\\?[;&a-z\\d%_.~+=-]*)?'+ 
+                '(\\#[-a-z\\d_]*)?$','i');
             return !!pattern.test(message);
         }
 
@@ -62,7 +83,7 @@
             if (countDownMatch) {
                 const direction = countDownMatch[1].toLowerCase();
                 const start = parseInt(countDownMatch[2]);
-                const stop = parseInt(countDownMatch[5]) || (direction === 'down' ? 0 : 10); // default stop
+                const stop = parseInt(countDownMatch[5]) || (direction === 'down' ? 0 : 10);
 
                 let count = [];
                 if (direction === 'down') {
@@ -79,159 +100,155 @@
             return null;
         }
 
-async function botResponse(message) {
-    if (isValidURL(message)) {
-        // Handle URL extraction via backend API
-        try {
-            const response = await fetch(`https://your-api-endpoint/extract-url`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer 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`
-                },
-                body: JSON.stringify({ url: message })
-            });
+        async function botResponse(message) {
+            if (isValidURL(message)) {
+                try {
+                    const response = await fetch(`https://your-api-endpoint/extract-url`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${apiKey}`
+                        },
+                        body: JSON.stringify({ url: message })
+                    });
 
-            if (!response.ok) {
-                throw new Error(`API error: ${response.status}`);
-            }
+                    if (!response.ok) {
+                        throw new Error(`API error: ${response.status}`);
+                    }
 
-            const data = await response.json();
-            return data.summary || "I couldn't find any useful information on that page.";
-        } catch (error) {
-            console.error('Error fetching URL summary:', error);
-            return "I'm sorry, I couldn't process the URL provided. Please check the link.";
-        }
-    } else {
-        // GPT-2 standard response
-        try {
-            const response = await fetch(`https://your-api-endpoint/generate`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer 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`
-                },
-                body: JSON.stringify({ 
-                    model: 'gpt-2',
-                    input: message 
-                })
-            });
-
-            if (!response.ok) {
-                throw new Error(`API error: ${response.status}`);
-            }
-
-            const data = await response.json();
-
-            if (!data.response || data.response.toLowerCase().includes('error') || data.response.trim() === message.trim()) {
-                return "I'm not sure I understand. Could you phrase it differently?";
-            }
-
-            return data.response;
-        } catch (error) {
-            console.error('Error fetching GPT-2 response:', error);
-            return "I encountered an error while processing your request. Please try again in a moment.";
-        }
-    }
-}
-
-async function systemInfoRequest() {
-    try {
-        const response = await fetch(`https://your-api-endpoint/system-info`, {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer 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`
-            }
-        });
-
-        if (!response.ok) {
-            throw new Error(`API error: ${response.status}`);
-        }
-
-        const data = await response.json();
-        return JSON.stringify(data, null, 2);  // Nicely format the system info
-    } catch (error) {
-        console.error('Error fetching system info:', error);
-        return "Unable to fetch system information.";
-    }
-}
-
-function handleUserInput() {
-    const message = userInput.value.trim();
-    if (message) {
-        addMessage('You', message);
-        userInput.value = '';
-
-        setTimeout(async () => {
-            let response = '';
-
-            // Check if the input is something the bot can handle directly
-            if (message.toLowerCase().includes('hello')) {
-                response = 'Hello! How can I assist you today?';
-            } else if (message.toLowerCase().includes('your name')) {
-                response = "I'm your friendly chatbot!";
-            } else if (message.toLowerCase().includes('help')) {
-                response = "You can ask me to perform tasks like counting, math operations, or even sharing trivia.";
-            } else if (message.toLowerCase().includes('capabilities')) {
-                response = "I can chat, count, perform math operations, share trivia, handle URLs, and remember recent parts of our conversation!";
-            } else if (message.toLowerCase().includes('remember') || message.toLowerCase().includes('recent')) {
-                response = recallMemory();  // Recall recent messages for context
-            } else if (message.toLowerCase().includes('alphabet')) {
-                response = "The alphabet starts with A, B, C...and goes all the way to Z!";
-            
-            // Math operations
-            } else if (message.match(/(\d+)\s*\+\s*(\d+)/)) {
-                const [_, num1, num2] = message.match(/(\d+)\s*\+\s*(\d+)/);
-                response = `${num1} + ${num2} = ${parseInt(num1) + parseInt(num2)}`;
-            } else if (message.match(/(\d+)\s*\-\s*(\d+)/)) {
-                const [_, num1, num2] = message.match(/(\d+)\s*\-\s*(\d+)/);
-                response = `${num1} - ${num2} = ${parseInt(num1) - parseInt(num2)}`;
-            } else if (message.match(/(\d+)\s*\/\s*(\d+)/)) {
-                const [_, num1, num2] = message.match(/(\d+)\s*\/\s*(\d+)/);
-                response = num2 == 0 ? "I can't divide by zero!" : `${num1} / ${num2} = ${(parseInt(num1) / parseInt(num2)).toFixed(2)}`;
-            } else if (message.match(/(\d+)\s*\*\s*(\d+)/)) {
-                const [_, num1, num2] = message.match(/(\d+)\s*\*\s*(\d+)/);
-                response = `${num1} * ${num2} = ${num1 * num2}`;
-            } else if (message.toLowerCase().includes('square root')) {
-                const match = message.match(/square root of (\d+)/);
-                if (match) {
-                    const number = parseInt(match[1], 10);
-                    response = `The square root of ${number} is approximately ${Math.sqrt(number).toFixed(2)}`;
-                } else {
-                    response = "I can't calculate that. Try 'square root of [number]'.";
+                    const data = await response.json();
+                    return data.summary || "I couldn't find any useful information on that page.";
+                } catch (error) {
+                    console.error('Error fetching URL summary:', error);
+                    return "I'm sorry, I couldn't process the URL provided. Please check the link.";
                 }
-            
-            // Trivia
-            } else if (message.toLowerCase().includes('trivia')) {
-                const triviaFacts = [
-                    "Did you know? Honey never spoils and can last thousands of years!",
-                    "Fun fact: Octopuses have three hearts.",
-                    "Here’s a cool fact: Bananas are berries, but strawberries aren’t!",
-                    "Did you know? A day on Venus is longer than a year on Venus!",
-                    "Fun fact: Humans share 60% of their DNA with bananas."
-                ];
-                response = triviaFacts[Math.floor(Math.random() * triviaFacts.length)];
-            } else if (message.toLowerCase().includes('system info')) {
-                response = await systemInfoRequest();
-            
-            // Custom countdown handler
             } else {
-                const countdownResult = handleCountdown(message);
-                if (countdownResult) {
-                    response = countdownResult;
-                } else {
-                    // Send to GPT-2 model for further processing
-                    response = await botResponse(message);
+                try {
+                    const response = await fetch(`https://your-api-endpoint/generate`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${apiKey}`
+                        },
+                        body: JSON.stringify({ 
+                            model: modelName,
+                            input: message 
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`API error: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+
+                    if (!data.response || data.response.toLowerCase().includes('error') || data.response.trim() === message.trim()) {
+                        return "I'm not sure I understand. Could you phrase it differently?";
+                    }
+
+                    return data.response;
+                } catch (error) {
+                    console.error('Error fetching GPT-2 response:', error);
+                    return "I encountered an error while processing your request. Please try again in a moment.";
                 }
             }
+        }
 
-            addMessage('Bot', response);
-            addToMemory(message, response);  // Add to memory after response
-        }, 500);
-    }
-}
+        async function systemInfoRequest() {
+            try {
+                const response = await fetch(`https://your-api-endpoint/system-info`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`
+                    }
+                });
 
-        
+                if (!response.ok) {
+                    throw new Error(`API error: ${response.status}`);
+                }
+
+                const data = await response.json();
+                return JSON.stringify(data, null, 2);
+            } catch (error) {
+                console.error('Error fetching system info:', error);
+                return "Unable to fetch system information.";
+            }
+        }
+
+        function handleUserInput() {
+            const message = userInput.value.trim();
+            if (message) {
+                addMessage('You', message);
+                userInput.value = '';
+
+                setTimeout(async () => {
+                    let response = '';
+
+                    if (message.toLowerCase().includes('hello')) {
+                        response = 'Hello! How can I assist you today?';
+                    } else if (message.toLowerCase().includes('your name')) {
+                        response = "I'm your friendly chatbot!";
+                    } else if (message.toLowerCase().includes('help')) {
+                        response = "You can ask me to perform tasks like counting, math operations, or even sharing trivia.";
+                    } else if (message.toLowerCase().includes('capabilities')) {
+                        response = "I can chat, count, perform math operations, share trivia, handle URLs, and remember recent parts of our conversation!";
+                    } else if (message.toLowerCase().includes('remember') || message.toLowerCase().includes('recent')) {
+                        response = recallMemory();
+                    } else if (message.toLowerCase().includes('alphabet')) {
+                        response = "The alphabet starts with A, B, C...and goes all the way to Z!";
+
+                    // Math operations
+                    } else if (message.match(/(\d+)\s*\+\s*(\d+)/)) {
+                        const [_, num1, num2] = message.match(/(\d+)\s*\+\s*(\d+)/);
+                        response = `${num1} + ${num2} = ${parseInt(num1) + parseInt(num2)}`;
+                    } else if (message.match(/(\d+)\s*\-\s*(\d+)/)) {
+                        const [_, num1, num2] = message.match(/(\d+)\s*\-\s*(\d+)/);
+                        response = `${num1} - ${num2} = ${parseInt(num1) - parseInt(num2)}`;
+                    } else if (message.match(/(\d+)\s*\/\s*(\d+)/)) {
+                        const [_, num1, num2] = message.match(/(\d+)\s*\/\s*(\d+)/);
+                        response = num2 == 0 ? "I can't divide by zero!" : `${num1} / ${num2} = ${(parseInt(num1) / parseInt(num2)).toFixed(2)}`;
+                    } else if (message.match(/(\d+)\s*\*\s*(\d+)/)) {
+                        const [_, num1, num2] = message.match(/(\d+)\s*\*\s*(\d+)/);
+                        response = `${num1} * ${num2} = ${num1 * num2}`;
+                    } else if (message.toLowerCase().includes('square root')) {
+                        const match = message.match(/square root of (\d+)/);
+                        if (match) {
+                            const number = parseInt(match[1], 10);
+                            response = `The square root of ${number} is approximately ${Math.sqrt(number).toFixed(2)}`;
+                        } else {
+                            response = "I can't calculate that. Try 'square root of [number]'.";
+                        }
+
+                    // Trivia
+                    } else if (message.toLowerCase().includes('trivia')) {
+                        const triviaFacts = [
+                            "Did you know? Honey never spoils and can last thousands of years!",
+                            "Fun fact: Octopuses have three hearts.",
+                            "Here’s a cool fact: Bananas are berries, but strawberries aren’t!",
+                            "Did you know? A day on Venus is longer than a year on Venus!",
+                            "Fun fact: Humans share 60% of their DNA with bananas."
+                        ];
+                        response = triviaFacts[Math.floor(Math.random() * triviaFacts.length)];
+                    } else if (message.toLowerCase().includes('system info')) {
+                        response = await systemInfoRequest();
+                    
+                    // Custom countdown handler
+                    } else {
+                        const countdownResult = handleCountdown(message);
+                        if (countdownResult) {
+                            response = countdownResult;
+                        } else {
+                            // Send to GPT-2 model for further processing
+                            response = await botResponse(message);
+                        }
+                    }
+
+                    addMessage('Bot', response);
+                    addToMemory(message, response);
+                }, 500);
+            }
+        }
+
         sendButton.addEventListener('click', handleUserInput);
         userInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
