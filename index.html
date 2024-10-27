@@ -56,10 +56,16 @@
         }
 
         function recallMemory() {
-            let recentUser = memory.userMessages.slice(-2).join(' | ');
-            let recentBot = memory.botResponses.slice(-2).join(' | ');
-            return `You recently mentioned: "${recentUser}" and I said: "${recentBot}".`;
-        }
+    let recentUser = memory.userMessages.slice(-2).join(' | ');
+    let recentBot = memory.botResponses.slice(-2).join(' | ');
+    const variations = [
+        `Earlier, you mentioned: "${recentUser}", and I responded: "${recentBot}".`,
+        `I recall you said: "${recentUser}", and I replied with: "${recentBot}".`,
+        `You recently said: "${recentUser}", and I answered: "${recentBot}".`
+    ];
+    return variations[Math.floor(Math.random() * variations.length)];
+}
+
 
         function addMessage(sender, message) {
             const messageElement = document.createElement('p');
@@ -185,19 +191,37 @@
             }
         }
 
-        function handleUserInput() {
-            const message = userInput.value.trim();
-            if (message) {
-                addMessage('You', message);
-                userInput.value = '';
+ async function handleUserInput() {
+    const message = userInput.value.trim();
+    if (message) {
+        addMessage('You', message);
+        userInput.value = '';
 
-                setTimeout(async () => {
-                    let response = '';
+        setTimeout(async () => {
+            let response = '';
+
+            // Prioritized responses
             if (getConstant(message)) {
-    response = getConstant(message);
-} else if (message.toLowerCase().includes('hello')) {
-    response = 'Hello! How can I assist you today?';
-}
+                response = getConstant(message);
+            } else if (message.toLowerCase().includes('hello')) {
+                response = 'Hello! How can I assist you today?';
+            } else if (message.toLowerCase().includes('remember')) {
+                response = recallMemory();
+            } else {
+                // Default to processing by bot or fallback response
+                response = await botResponse(message);
+
+                // Fallback response if botResponse doesn't understand
+                if (!response || response.toLowerCase().includes('error')) {
+                    response = "I'm not sure I understand that request. Could you clarify?";
+                }
+            }
+
+            addMessage('Bot', response);
+            addToMemory(message, response);
+        }, 500);
+    }
+}  
 
                     if (message.toLowerCase().includes('hello')) {
                         response = 'Hello! How can I assist you today?';
