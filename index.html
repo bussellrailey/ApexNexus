@@ -156,7 +156,6 @@ async function systemInfoRequest() {
     }
 }
 
-
 function handleUserInput() {
     const message = userInput.value.trim();
     if (message) {
@@ -165,7 +164,7 @@ function handleUserInput() {
 
         setTimeout(async () => {
             let response = '';
-            
+
             // Check if the input is something the bot can handle directly
             if (message.toLowerCase().includes('hello')) {
                 response = 'Hello! How can I assist you today?';
@@ -174,7 +173,9 @@ function handleUserInput() {
             } else if (message.toLowerCase().includes('help')) {
                 response = "You can ask me to perform tasks like counting, math operations, or even sharing trivia.";
             } else if (message.toLowerCase().includes('capabilities')) {
-                response = "I can chat, count, perform math operations, share trivia, and handle URLs!";
+                response = "I can chat, count, perform math operations, share trivia, handle URLs, and remember recent parts of our conversation!";
+            } else if (message.toLowerCase().includes('remember') || message.toLowerCase().includes('recent')) {
+                response = recallMemory();  // Recall recent messages for context
             } else if (message.toLowerCase().includes('alphabet')) {
                 response = "The alphabet starts with A, B, C...and goes all the way to Z!";
             
@@ -225,9 +226,11 @@ function handleUserInput() {
             }
 
             addMessage('Bot', response);
+            addToMemory(message, response);  // Add to memory after response
         }, 500);
     }
 }
+
         
         sendButton.addEventListener('click', handleUserInput);
         userInput.addEventListener('keypress', (e) => {
