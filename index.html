@@ -156,55 +156,78 @@
             }
         }
 
-        function handleUserInput() {
-            const message = userInput.value.trim();
-            if (message) {
-                addMessage('You', message);
-                userInput.value = '';
+function handleUserInput() {
+    const message = userInput.value.trim();
+    if (message) {
+        addMessage('You', message);
+        userInput.value = '';
 
-                setTimeout(async () => {
-                    let response = '';
-                    
-                    // Check if the input is something the bot can handle directly
-                    if (message.toLowerCase().includes('hello')) {
-                        response = 'Hello! How can I assist you today?';
-                    } else if (message.toLowerCase().includes('your name')) {
-                        response = "I'm your friendly chatbot!";
-                    } else if (message.toLowerCase().includes('help')) {
-                        response = "You can ask me to perform basic tasks like counting, simple math, or even exploring URLs.";
-                    } else if (message.toLowerCase().includes('capabilities')) {
-                        response = "I can chat, count down or up, and handle basic arithmetic! Just let me know what you’d like to try.";
-                    } else if (message.toLowerCase().includes('alphabet')) {
-                        response = "The alphabet starts with A, B, C...and goes all the way to Z!";
-                    } else if (message.toLowerCase().match(/(\d+)\s*\*\s*(\d+)/)) {
-                        const [_, num1, num2] = message.match(/(\d+)\s*\*\s*(\d+)/);
-                        response = `${num1} * ${num2} = ${num1 * num2}`;
-                    } else if (message.toLowerCase().includes('square root')) {
-                        const match = message.match(/square root of (\d+)/);
-                        if (match) {
-                            const number = parseInt(match[1], 10);
-                            response = `The square root of ${number} is approximately ${Math.sqrt(number).toFixed(2)}`;
-                        } else {
-                            response = "I can't calculate that. Try 'square root of [number]'.";
-                        }
-                    } else if (message.toLowerCase().includes('system info')) {
-                        response = await systemInfoRequest();
-                    } else {
-                        // Custom countdown handler
-                        const countdownResult = handleCountdown(message);
-                        if (countdownResult) {
-                            response = countdownResult;
-                        } else {
-                            // Send to GPT-2 model for further processing
-                            response = await botResponse(message);
-                        }
-                    }
-
-                    addMessage('Bot', response);
-                }, 500);
+        setTimeout(async () => {
+            let response = '';
+            
+            // Check if the input is something the bot can handle directly
+            if (message.toLowerCase().includes('hello')) {
+                response = 'Hello! How can I assist you today?';
+            } else if (message.toLowerCase().includes('your name')) {
+                response = "I'm your friendly chatbot!";
+            } else if (message.toLowerCase().includes('help')) {
+                response = "You can ask me to perform tasks like counting, math operations, or even sharing trivia.";
+            } else if (message.toLowerCase().includes('capabilities')) {
+                response = "I can chat, count, perform math operations, share trivia, and handle URLs!";
+            } else if (message.toLowerCase().includes('alphabet')) {
+                response = "The alphabet starts with A, B, C...and goes all the way to Z!";
+            
+            // Math operations
+            } else if (message.match(/(\d+)\s*\+\s*(\d+)/)) {
+                const [_, num1, num2] = message.match(/(\d+)\s*\+\s*(\d+)/);
+                response = `${num1} + ${num2} = ${parseInt(num1) + parseInt(num2)}`;
+            } else if (message.match(/(\d+)\s*\-\s*(\d+)/)) {
+                const [_, num1, num2] = message.match(/(\d+)\s*\-\s*(\d+)/);
+                response = `${num1} - ${num2} = ${parseInt(num1) - parseInt(num2)}`;
+            } else if (message.match(/(\d+)\s*\/\s*(\d+)/)) {
+                const [_, num1, num2] = message.match(/(\d+)\s*\/\s*(\d+)/);
+                response = num2 == 0 ? "I can't divide by zero!" : `${num1} / ${num2} = ${(parseInt(num1) / parseInt(num2)).toFixed(2)}`;
+            } else if (message.match(/(\d+)\s*\*\s*(\d+)/)) {
+                const [_, num1, num2] = message.match(/(\d+)\s*\*\s*(\d+)/);
+                response = `${num1} * ${num2} = ${num1 * num2}`;
+            } else if (message.toLowerCase().includes('square root')) {
+                const match = message.match(/square root of (\d+)/);
+                if (match) {
+                    const number = parseInt(match[1], 10);
+                    response = `The square root of ${number} is approximately ${Math.sqrt(number).toFixed(2)}`;
+                } else {
+                    response = "I can't calculate that. Try 'square root of [number]'.";
+                }
+            
+            // Trivia
+            } else if (message.toLowerCase().includes('trivia')) {
+                const triviaFacts = [
+                    "Did you know? Honey never spoils and can last thousands of years!",
+                    "Fun fact: Octopuses have three hearts.",
+                    "Here’s a cool fact: Bananas are berries, but strawberries aren’t!",
+                    "Did you know? A day on Venus is longer than a year on Venus!",
+                    "Fun fact: Humans share 60% of their DNA with bananas."
+                ];
+                response = triviaFacts[Math.floor(Math.random() * triviaFacts.length)];
+            } else if (message.toLowerCase().includes('system info')) {
+                response = await systemInfoRequest();
+            
+            // Custom countdown handler
+            } else {
+                const countdownResult = handleCountdown(message);
+                if (countdownResult) {
+                    response = countdownResult;
+                } else {
+                    // Send to GPT-2 model for further processing
+                    response = await botResponse(message);
+                }
             }
-        }
 
+            addMessage('Bot', response);
+        }, 500);
+    }
+}
+        
         sendButton.addEventListener('click', handleUserInput);
         userInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
