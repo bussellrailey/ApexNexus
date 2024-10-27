@@ -37,8 +37,8 @@
         const userInput = document.getElementById('userInput');
         const sendButton = document.getElementById('sendButton');
         
-        const apiKey = 'your-api-key';  // Replace with your actual API key
-        const modelName = 'your-gpt-2-model';  // Replace with your GPT-2 model name
+        const apiKey = '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';  // API key for integration
+        const modelName = 'gpt-2';  // Replace with your GPT-2 model name if needed
 
         function addMessage(sender, message) {
             const messageElement = document.createElement('p');
@@ -80,111 +80,130 @@
         }
 
         async function botResponse(message) {
-    if (isValidURL(message)) {
-        // Handle URL extraction via backend API
-        try {
-            const response = await fetch(`https://your-api-endpoint/extract-url`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${apiKey}`  // Ensure apiKey is set
-                },
-                body: JSON.stringify({ url: message })
-            });
+            if (isValidURL(message)) {
+                // Handle URL extraction via backend API
+                try {
+                    const response = await fetch(`https://your-api-endpoint/extract-url`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${apiKey}`
+                        },
+                        body: JSON.stringify({ url: message })
+                    });
 
-            if (!response.ok) {
-                throw new Error(`API error: ${response.status}`);
-            }
+                    if (!response.ok) {
+                        throw new Error(`API error: ${response.status}`);
+                    }
 
-            const data = await response.json();
-            return data.summary || "I couldn't find any useful information on that page.";
-        } catch (error) {
-            console.error('Error fetching URL summary:', error);
-            return "I'm sorry, I couldn't process the URL provided. Please check the link.";
-        }
-    } else {
-        // GPT-2 standard response
-        try {
-            const response = await fetch(`https://your-api-endpoint/generate`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${apiKey}`  // Ensure apiKey is set
-                },
-                body: JSON.stringify({ 
-                    model: modelName,
-                    input: message 
-                })
-            });
-
-            if (!response.ok) {
-                throw new Error(`API error: ${response.status}`);
-            }
-
-            const data = await response.json();
-
-            // Improved error handling for repetitive or empty responses
-            if (!data.response || data.response.toLowerCase().includes('error') || data.response.trim() === message.trim()) {
-                return "I'm not sure I understand. Could you phrase it differently?";
-            }
-
-            return data.response;
-        } catch (error) {
-            console.error('Error fetching GPT-2 response:', error);
-            return "I encountered an error while processing your request. Please try again in a moment.";
-        }
-    }
-}
-
-function handleUserInput() {
-    const message = userInput.value.trim();
-    if (message) {
-        addMessage('You', message);
-        userInput.value = '';
-
-        setTimeout(async () => {
-            let response = '';
-            
-            // Check if the input is something the bot can handle directly
-            if (message.toLowerCase().includes('hello')) {
-                response = 'Hello! How can I assist you today?';
-            } else if (message.toLowerCase().includes('your name')) {
-                response = "I'm your friendly chatbot!";
-            } else if (message.toLowerCase().includes('help')) {
-                response = "You can ask me to perform basic tasks like counting, simple math, or even exploring URLs.";
-            } else if (message.toLowerCase().includes('capabilities')) {
-                response = "I can chat, count down or up, and handle basic arithmetic! Just let me know what you’d like to try.";
-            } else if (message.toLowerCase().includes('alphabet')) {
-                response = "The alphabet starts with A, B, C...and goes all the way to Z!";
-            } else if (message.toLowerCase().match(/(\d+)\s*\*\s*(\d+)/)) {
-                const [_, num1, num2] = message.match(/(\d+)\s*\*\s*(\d+)/);
-                response = `${num1} * ${num2} = ${num1 * num2}`;
-            } else if (message.toLowerCase().includes('square root')) {
-                const match = message.match(/square root of (\d+)/);
-                if (match) {
-                    const number = parseInt(match[1], 10);
-                    response = `The square root of ${number} is approximately ${Math.sqrt(number).toFixed(2)}`;
-                } else {
-                    response = "I can't calculate that. Try 'square root of [number]'.";
+                    const data = await response.json();
+                    return data.summary || "I couldn't find any useful information on that page.";
+                } catch (error) {
+                    console.error('Error fetching URL summary:', error);
+                    return "I'm sorry, I couldn't process the URL provided. Please check the link.";
                 }
-            } else if (message.toLowerCase().includes('system info')) {
-                response = await systemInfoRequest();
             } else {
-                // Custom countdown handler
-                const countdownResult = handleCountdown(message);
-                if (countdownResult) {
-                    response = countdownResult;
-                } else {
-                    // Send to GPT-2 model for further processing
-                    response = await botResponse(message);
+                // GPT-2 standard response
+                try {
+                    const response = await fetch(`https://your-api-endpoint/generate`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${apiKey}`
+                        },
+                        body: JSON.stringify({ 
+                            model: modelName,
+                            input: message 
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`API error: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+
+                    if (!data.response || data.response.toLowerCase().includes('error') || data.response.trim() === message.trim()) {
+                        return "I'm not sure I understand. Could you phrase it differently?";
+                    }
+
+                    return data.response;
+                } catch (error) {
+                    console.error('Error fetching GPT-2 response:', error);
+                    return "I encountered an error while processing your request. Please try again in a moment.";
                 }
             }
+        }
 
-            addMessage('Bot', response);
-        }, 500);
-    }
-}
-      
+        async function systemInfoRequest() {
+            try {
+                const response = await fetch(`https://your-api-endpoint/system-info`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API error: ${response.status}`);
+                }
+
+                const data = await response.json();
+                return JSON.stringify(data, null, 2);  // Nicely format the system info
+            } catch (error) {
+                console.error('Error fetching system info:', error);
+                return "Unable to fetch system information.";
+            }
+        }
+
+        function handleUserInput() {
+            const message = userInput.value.trim();
+            if (message) {
+                addMessage('You', message);
+                userInput.value = '';
+
+                setTimeout(async () => {
+                    let response = '';
+                    
+                    // Check if the input is something the bot can handle directly
+                    if (message.toLowerCase().includes('hello')) {
+                        response = 'Hello! How can I assist you today?';
+                    } else if (message.toLowerCase().includes('your name')) {
+                        response = "I'm your friendly chatbot!";
+                    } else if (message.toLowerCase().includes('help')) {
+                        response = "You can ask me to perform basic tasks like counting, simple math, or even exploring URLs.";
+                    } else if (message.toLowerCase().includes('capabilities')) {
+                        response = "I can chat, count down or up, and handle basic arithmetic! Just let me know what you’d like to try.";
+                    } else if (message.toLowerCase().includes('alphabet')) {
+                        response = "The alphabet starts with A, B, C...and goes all the way to Z!";
+                    } else if (message.toLowerCase().match(/(\d+)\s*\*\s*(\d+)/)) {
+                        const [_, num1, num2] = message.match(/(\d+)\s*\*\s*(\d+)/);
+                        response = `${num1} * ${num2} = ${num1 * num2}`;
+                    } else if (message.toLowerCase().includes('square root')) {
+                        const match = message.match(/square root of (\d+)/);
+                        if (match) {
+                            const number = parseInt(match[1], 10);
+                            response = `The square root of ${number} is approximately ${Math.sqrt(number).toFixed(2)}`;
+                        } else {
+                            response = "I can't calculate that. Try 'square root of [number]'.";
+                        }
+                    } else if (message.toLowerCase().includes('system info')) {
+                        response = await systemInfoRequest();
+                    } else {
+                        // Custom countdown handler
+                        const countdownResult = handleCountdown(message);
+                        if (countdownResult) {
+                            response = countdownResult;
+                        } else {
+                            // Send to GPT-2 model for further processing
+                            response = await botResponse(message);
+                        }
+                    }
+
+                    addMessage('Bot', response);
+                }, 500);
+            }
+        }
 
         sendButton.addEventListener('click', handleUserInput);
         userInput.addEventListener('keypress', (e) => {
